@@ -46,8 +46,13 @@ public class RSA {
 			System.out.println("x= "+this.x+" y= "+this.y);
 		}
 	}
-	
-	static class PublicKey{
+	/**
+	 * Класс содержит поля открытого ключа,
+	 * и метод шифрования строки
+	 * @author Sergey
+	 *
+	 */
+	public static class PublicKey{
 		private long n;
 		private long e;
 		PublicKey(long n, long e){
@@ -65,7 +70,7 @@ public class RSA {
 			return encmessage;
 		}
 	}
-	static class DecryptionKey{
+	public static class DecryptionKey{
 		private long n;
 		private long d;
 		DecryptionKey(long n, long d){
@@ -84,7 +89,7 @@ public class RSA {
 		}
 	}
 	//Extended Euclidean Algoritm
-	static Vector GCDExtended(long a, long b) {
+	public static Vector GCDExtended(long a, long b) {
 		if(a%b==0) {
 			return new Vector(0,1);
 		}
@@ -92,8 +97,14 @@ public class RSA {
 		Vector v=GCDExtended(b,a%b);
 		return new Vector(v.getY(),v.getX()-v.getY()*divAB);
 	}
-	//быстрое возведение в степень
-	static long fastpow(long a, long n, long base) {
+	/**
+	 * Производит быстрое возведение в степень по модулю
+	 * @param a
+	 * @param n
+	 * @param base
+	 * @return (a^n) mod base
+	 */
+	public static long fastpow(long a, long n, long base) {
 		if(n==0) 
 			return 1;
 		
@@ -107,13 +118,24 @@ public class RSA {
 		}
 		
 	}
-	//случайное число в заданном диапазоне
-	static long generate(long min,long max) {
+	/**
+	 * Производит генерацию случайного числа
+	 * в заданном диапазоне
+	 * @param min
+	 * @param max
+	 * @return случайное число от min до max
+	 */
+	public static long generate(long min,long max) {
 		return (long)(Math.random()*(max-min))+min;
 	}
 	//количество проверок
 	private static int k=100;
-	static boolean FermMethod(long t) {
+	/**
+	 * Производит тест числа на простоту по методу Ферма
+	 * @param t
+	 * @return false, если число составное, и false, если простое
+	 */
+	public static boolean FermMethod(long t) {
 		for(int i=0;i<k;i++) {
 			long a=generate(2,t-1);
 			if(fastpow(a,t-1,t)%t!=1) {
@@ -122,8 +144,13 @@ public class RSA {
 		}
 		return true;
 	}
-	
-	long genNewPrimeNumber(long min, long max) {
+	/**
+	 * Генерирует случайное простое число в заданном диапазоне
+	 * @param min
+	 * @param max
+	 * @return простое число
+	 */
+	public static long genNewPrimeNumber(long min, long max) {
 		long Zvalue=generate(min,max);
 		while(!FermMethod(Zvalue)) {
 			Zvalue=generate(min,max);
@@ -154,13 +181,13 @@ public class RSA {
 	}
 
 	private long genPublicExp(long fN) {
-		// TODO Auto-generated method stub
+		
 		long ee=genNewPrimeNumber(2,fN);
 		
 		return ee;
 	}
 	private long genSecretExp(long f,long e) {
-		// TODO Auto-generated method stub
+		
 		long C=GCD(f,e);
 		Vector v=GCDExtended(f,e);
 		
@@ -170,34 +197,22 @@ public class RSA {
 		}
 		return v.getY();
 	}
-	PublicKey getPublicKey() {
+	public PublicKey getPublicKey() {
 		return new PublicKey(N,e);
 	}
-	DecryptionKey getDecryptionKey() {
+	public DecryptionKey getDecryptionKey() {
 		return new DecryptionKey(N,d);
 	}
 	void print() {
-		
 		System.out.println("p = "+p);
-		
 		System.out.println("q = "+q);
-		N=p*q;
 		System.out.println("N = "+N);
-		//Euler function
-		//Используя мультипликативность функции Эйлера f(mn)=f(m)*f(n)
-		//и зная, что f(p)=p-1, для простых p, получаим
-		
 		System.out.println("f(n) = "+fN);
-		//public exponent
-		
 		System.out.println("public exponent e = "+e);
-		//из уравнения e*d mod f(n)=1
-		//следует, что d=y, где y
-		//x*f(n)+y*e=1
 		System.out.println("private exponent d = "+d);
 	}
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
+		
 		RSA myrsa=new RSA();
 		myrsa.print();
 		
