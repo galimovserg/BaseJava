@@ -1,4 +1,4 @@
-package algo;
+package RSA;
 
 public class RSA {
 	
@@ -9,10 +9,10 @@ public class RSA {
 	private long e;
 	private long d;
 	
-	private static final long minFirstValue=40;
-	private static final long maxFirstValue=80;
-	private static final long minSecondValue=70;
-	private static final long maxSecondValue=120;
+	private static final long minP=40;
+	private static final long maxP=80;
+	private static final long minQ=70;
+	private static final long maxQ=120;
 	
 	//Euclidean algorithm
 	static long GCD(long a, long b) {
@@ -29,23 +29,7 @@ public class RSA {
 			return GCD(b, a%b);
 		}*/
 	}
-	static class Vector{
-		private long x;
-		private long y;
-		Vector(long x, long y){
-			this.y=y;
-			this.x=x;
-		}
-		long getX() {
-			return this.x;
-		}
-		long getY() {
-			return this.y;
-		}
-		void consolePrint(){
-			System.out.println("x= "+this.x+" y= "+this.y);
-		}
-	}
+	
 	/**
 	 * Класс содержит поля открытого ключа,
 	 * и метод шифрования строки
@@ -87,6 +71,13 @@ public class RSA {
 			}
 			return message;
 		}
+		public int[] decode(int[] m) {
+			int result[]=new int[m.length];
+			for(int i=0;i<m.length;i++) {
+				result[i]=(int) fastpow(m[i],d,n);
+			}
+			return result;
+		}
 	}
 	//Extended Euclidean Algoritm
 	public static Vector GCDExtended(long a, long b) {
@@ -107,9 +98,7 @@ public class RSA {
 	public static long fastpow(long a, long n, long base) {
 		if(n==0) 
 			return 1;
-		
 		if(n%2==0) {
-			
 			long result=fastpow(a,n/2,base);
 			return (result*result)%base;
 		}else
@@ -159,38 +148,52 @@ public class RSA {
 	}
 	
 	RSA(){
-		p=genNewPrimeNumber(minFirstValue,maxFirstValue);
-		//System.out.println("p = "+p);
-		q=genNewPrimeNumber(minSecondValue,maxSecondValue);
-		//System.out.println("q = "+q);
+		p=genNewPrimeNumber(minP,maxP);
+		
+		q=p;
+		while(q==p) {
+			q=genNewPrimeNumber(minQ,maxQ);
+		}
 		N=p*q;
-		//System.out.println("N = "+N);
 		//Euler function
 		//Используя мультипликативность функции Эйлера f(mn)=f(m)*f(n)
 		//и зная, что f(p)=p-1, для простых p, получаим
 		fN=(p-1)*(q-1);
-		//System.out.println("f(n) = "+fN);
 		//public exponent
 		e=genPublicExp(fN);
-		//System.out.println("public exponent e = "+e);
 		//из уравнения e*d mod f(n)=1
 		//следует, что d=y, где y
 		//x*f(n)+y*e=1
 		d=genSecretExp(fN,e);
-		//System.out.println("private exponent d = "+d);
-	}
-
-	private long genPublicExp(long fN) {
 		
+	}
+	RSA(long pp, long qq, long ee){
+		p=pp;
+		q=qq;	
+		N=p*q;
+		//Euler function
+		//Используя мультипликативность функции Эйлера f(mn)=f(m)*f(n)
+		//и зная, что f(p)=p-1, для простых p, получаим
+		fN=(p-1)*(q-1);
+		//public exponent
+		e=ee;
+		//из уравнения e*d mod f(n)=1
+		//следует, что d=y, где y
+		//x*f(n)+y*e=1
+		d=genSecretExp(fN,e);
+	}
+	private long genPublicExp(long fN) {
 		long ee=genNewPrimeNumber(2,fN);
+		while(fN%ee==0) {
+			ee=genNewPrimeNumber(2,fN);
+		}
+		
 		
 		return ee;
 	}
 	private long genSecretExp(long f,long e) {
 		
-		long C=GCD(f,e);
-		Vector v=GCDExtended(f,e);
-		
+		Vector v=GCDExtended(f,e);	
 		
 		if(v.getY()<0) {
 			return v.getY()+fN;
@@ -203,7 +206,7 @@ public class RSA {
 	public DecryptionKey getDecryptionKey() {
 		return new DecryptionKey(N,d);
 	}
-	void print() {
+	void printConsole() {
 		System.out.println("p = "+p);
 		System.out.println("q = "+q);
 		System.out.println("N = "+N);
@@ -211,10 +214,78 @@ public class RSA {
 		System.out.println("public exponent e = "+e);
 		System.out.println("private exponent d = "+d);
 	}
+	
+	public static long f(long x,long n) {
+		long res=(x*x-1)%n;
+		
+		return res;
+	}
+	/**
+	 * ро метод Полларда
+	 * @return
+	 */
+	public static long pollard(long n) {
+		//long j=1;
+		long x=generate(1,n-2);
+		long y = 1; long i = 0; int stage = 2;
+		   while (GCD(Math.abs(x - y),n) == 1)
+		   {
+		     if (i == stage){
+		       y = x;
+		       stage = stage*2; 
+		     }
+		     x = f(x,n);
+		     i = i + 1;
+		   }
+		   return GCD(Math.abs(x-y),n);
+		
+	}
+	private static final int maxraunds=20;
+	/**
+	 * Факторизация методом Полларда
+	 * @param n
+	 * @return
+	 */
+	public static long factorPollard(long n) {
+		//pollard может не найти делитель с первого раза
+		//поэтому будем повторять несколько раз
+		//для разных значений начальных x
+		for(int i=0;i<maxraunds;i++) {
+			long d=pollard(n);
+			if(d<n) {
+				return d;
+			}
+		}
+		return 1;
+	}
+	
+	/**
+	 * Проверяет правильность работы RSA
+	 * @param text
+	 * @return
+	 */
+	public static boolean testRSA(String text) {
+		
+		RSA myrsa=new RSA();
+		
+		PublicKey mypublickey=myrsa.getPublicKey();
+		DecryptionKey mydecodkey=myrsa.getDecryptionKey();
+		//шифрует а затем расшифровывает
+		String enc=mydecodkey.decode(mypublickey.encode(text));
+		//если входная строка соответсвует расшифрованной,
+		//то все работает верно
+		//иначе выводим содержимое RSA в консоль
+		//и возвращаем false
+		if(!text.equals(enc)) {
+			myrsa.printConsole();
+		}
+		
+		return text.equals(enc);
+	}
 	public static void main(String[] args) {
 		
 		RSA myrsa=new RSA();
-		myrsa.print();
+		myrsa.printConsole();
 		
 		PublicKey mypublickey=myrsa.getPublicKey();
 		
@@ -226,8 +297,48 @@ public class RSA {
 		System.out.println("Зашифрованное сообщение: "+encmessage);
 		String decmessage=mydecodkey.decode(encmessage);
 		System.out.println("Расшифрованное сообщение: "+decmessage);
+		System.out.println(GCD(8,2));
+	
+		System.out.println("fallen RSA tests:");
+		int i=0;
+		while(testRSA("1")&&i<200) {
+			i++;
+		}
+		
+		System.out.println("fallen Pollard tests:");
+		long p=genNewPrimeNumber(100,300);
+		long q=genNewPrimeNumber(100,300);
+		long ntest= p*q;
+		long factor=factorPollard(ntest);
+		i=0;
+		while(i<100) {
+			i++;
+			if((ntest/factor==p ||ntest/factor==q)&&(p!=ntest)&&(q!=ntest)) {
+				//System.out.println("p = "+p+" q = "+q+" factor = "+factor);
+			}else {
+				System.out.println("p = "+p+" q = "+q+" factor = "+factor);
+			}
+			p=genNewPrimeNumber(100,300);
+			q=genNewPrimeNumber(100,300);
+			ntest= p*q;
+			factor=factorPollard(ntest);
+		}
 		
 		
+		System.out.println("Hacking...");
+		
+		long nn=150737;
+		long pp=factorPollard(nn);
+		long qq=nn/pp;
+		long ee=113;
+		
+		RSA hack = new RSA(pp,qq,ee);
+		DecryptionKey dechacker=hack.getDecryptionKey();
+		int[] M={104318, 143945, 19327, 69783, 112451, 105094};
+		int[] result = dechacker.decode(M);
+		for(int c=0;c<result.length;c++) {
+			System.out.print(result[c]+" ");
+		}
 	}
 
 }
